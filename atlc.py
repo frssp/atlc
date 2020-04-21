@@ -75,12 +75,12 @@ class tlc(object):
     SCFERMI_FILE = "input-fermi.dat"
     TRAP_FILE = "input-fermi.dat"
 
-    def __init__(self, E_gap, T=300, Tanneal=835, thickness=2000, intensity=1.0):
+    def __init__(self, E_gap, T=300, Tanneal=835, thickness=2000, intensity=1.0, l_sq=False):
         """
         E_gap: band gap in eV
         T: temperature in K
         thickness: thickness in nm
-        intensity: light concentration, 1.0 = one Sun, 100 mW/cm^2
+        intensity: light concentration, 1.0 = one Sun, 100 mW/cm^2 (not yet effective yet)
         """
         try:
             E_gap, T, thickness, intensity = float(E_gap), float(
@@ -100,12 +100,14 @@ class tlc(object):
         self.intensity = intensity
         self.Es = Es  # np.arange(0.32, 4.401, 0.002)
         self.l_calc = False
-        self._calc_absorptivity()
+        if not l_sq:
+            self._calc_absorptivity()
+        else:
+            self.absorptivity = np.heaviside(Es - self.E_gap, 1)
+            self.alpha = pd.DataFrame(
+                {"E": Es, "alpha": np.heaviside(Es - self.E_gap, 1) * 1E100})
         self.scfermi = None
         self.R_SRH = None
-        # self.calculate()
-        # self.plot_jv()
-        # self.print_params()
         # self.WLs = np.arange(280, 4001, 1.0)
         # self.AM15nm = np.interp(self.WLs, WL, solar_per_nm)
 
@@ -129,13 +131,13 @@ class tlc(object):
         return s
 
     def calculate_SRH(self):
-        self.get_scfermi(tlc.SCFERMI_FILE)
-        self.run_scfermi(self.Tanneal, self.T)
-        self.read_traps()
-        self.R_SRH = self._get_R_SRH(self.Vs)
+        self._get_scfermi(tlc.SCFERMI_FILE)
+        self._run_scfermi(self.Tanneal, self.T)
+        self._read_traps()
+        self.R_SRH = self.__get_R_SRH(self.Vs)
 
     def calculate_rad(self):
-        self.j_sc = self.__cal_E_J_sc()
+        self.j_sc = self.__cal_J_sc()
         self.j0_rad = self.__cal_J0_rad()
         self.jv = self.__cal_jv(self.Vs)
         self.v_oc = self.__cal_v_oc()
@@ -147,7 +149,7 @@ class tlc(object):
         self.calculate_SRH()
         self.calculate_rad()
 
-    def __cal_E_J_sc(self):
+    def __cal_J_sc(self):
         fluxcumm = cumtrapz(
             self.absorptivity[::-1] * AM15flux[::-1], self.Es[::-1], initial=0)
         # fluxcumm = cumtrapz(AM15flux[::-1], self.Es[::-1], initial=0)
@@ -239,13 +241,13 @@ class tlc(object):
 
     # nonradiative recombination
     #
-    def get_scfermi(self, file_efrom):
+    def _get_scfermi(self, file_efrom):
         """
         read formation energies of defects, POSCAR, totdos
         """
         self.scfermi = Scfermi.from_file(file_efrom)
 
-    def run_scfermi(self, Tanneal, Tfrozen):
+    def _run_scfermi(self, Tanneal, Tfrozen):
         """
         run scfermi 
         1. calculate equilibrium concentrations of defects at Tanneal
@@ -253,7 +255,7 @@ class tlc(object):
         """
         run_scfermi_all(self.scfermi, Tanneal=Tanneal, Tfrozen=Tfrozen)
 
-    def read_traps(self, file='trap.dat'):
+    def _read_traps(self, file='trap.dat'):
         trap_list = []
         df_trap = pd.read_csv(file, comment='#', sep=r'\s+', usecols=range(6))
 
@@ -289,7 +291,7 @@ class tlc(object):
 
         return delta_n
 
-    def __get_R_SRH(self, V):
+    def __cal_R_SRH(self, V):
         assert self.scfermi is not None
 
         delta_n = self.__get_delta_n(V)
@@ -311,8 +313,8 @@ class tlc(object):
                     for trap in self.trap_list])
         return R
 
-    def _get_R_SRH(self, Vs):
-        Rs = np.array([self.__get_R_SRH(V) for V in Vs])
+    def __get_R_SRH(self, Vs):
+        Rs = np.array([self.__cal_R_SRH(V) for V in Vs])
         return Rs
 
     # Plot helper
