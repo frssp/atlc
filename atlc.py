@@ -335,12 +335,11 @@ class tlc(object):
         # plt.yscale("log")
         plt.show()
 
-    def plot_alpha(self):
+    def plot_alpha(self, l_plot_solar=True):
         self.alpha.plot(x='E', y='alpha', logy=True)
         plt.plot([self.E_gap, self.E_gap], [-1E10, 1E10],
                  ls='--', label="Band gap")
         plt.ylim((10E0, 10E6))
-        # plt.xlim((0, self.E_gap))
         plt.xlabel("Energy (eV)", fontsize=16)
         plt.ylabel("Absorption coefficient ($\mathregular{cm^{-1}}$)",
                    fontsize=16)
@@ -348,7 +347,16 @@ class tlc(object):
             plt.title("Absorption coefficient (taken from {})".format(tlc.ALPHA_FILE))
         else: 
             plt.title("Absorption coefficient (SQ limit)".format(tlc.ALPHA_FILE))
-        plt.legend()
+        plt.legend(loc=1)
+
+        if l_plot_solar:
+            # plt.xlim((0, self.E_gap))
+            plt.twinx()
+            plt.plot(Es, AM15*1E-3, label="AM1.5G", c='gray')
+            plt.ylabel("Spectral irradiation  ($\mathregular{kW m^{-2} eV^{-1}}$)",
+                    fontsize=16)
+            plt.legend(loc=4)
+
         plt.show()
 
     def plot_jv(self):
