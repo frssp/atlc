@@ -100,6 +100,7 @@ class tlc(object):
         self.intensity = intensity
         self.Es = Es  # np.arange(0.32, 4.401, 0.002)
         self.l_calc = False
+        self.l_sq = l_sq
         if not l_sq:
             self._calc_absorptivity()
         else:
@@ -343,7 +344,10 @@ class tlc(object):
         plt.xlabel("Energy (eV)", fontsize=16)
         plt.ylabel("Absorption coefficient ($\mathregular{cm^{-1}}$)",
                    fontsize=16)
-        plt.title("Absorption coefficient (taken from {})".format(tlc.ALPHA_FILE))
+        if not self.l_sq: 
+            plt.title("Absorption coefficient (taken from {})".format(tlc.ALPHA_FILE))
+        else: 
+            plt.title("Absorption coefficient (SQ limit)".format(tlc.ALPHA_FILE))
         plt.legend()
         plt.show()
 
