@@ -116,7 +116,10 @@ class tlc(object):
         """
         params
         """
-        s = "Trap limited conversion efficiency (TLC)\n"
+        if self.l_sq:
+            s = "Shockley-Queisser limit (SQ limit)\n"
+        else:
+            s = "Trap limited conversion efficiency (TLC)\n"
         s += "T: {:.1f} K\n".format(self.T)
         s += "E_gap: {:.1f} eV\n".format(self.E_gap)
         s += "Thickness: {:.1f} nm".format(self.thickness)
@@ -321,6 +324,7 @@ class tlc(object):
     # Plot helper
     def plot_tauc(self):
         tauc = (self.alpha.alpha*self.alpha.E)**2
+        plt.figure(0)
         plt.plot(self.alpha.E, tauc)
         plt.plot([self.E_gap, self.E_gap], [-1E10, 1E10],
                  ls='--', label="Band gap")
@@ -333,7 +337,7 @@ class tlc(object):
         plt.xlim((self.E_gap-0.5, self.E_gap+0.5))
         plt.ylim((0, 10E9))
         # plt.yscale("log")
-        plt.show()
+        # plt.show()
 
     def plot_alpha(self, l_plot_solar=True):
         self.alpha.plot(x='E', y='alpha', logy=True)
@@ -357,7 +361,7 @@ class tlc(object):
                     fontsize=16)
             plt.legend(loc=4)
 
-        plt.show()
+        # plt.show()
 
     def plot_jv(self):
         self.jv.mask(self.jv.J > 100).plot(x="V", y="J")
@@ -367,7 +371,7 @@ class tlc(object):
         plt.ylabel("Current density (mA/$\mathregular{cm^2}$)",
                    fontsize=16)
         plt.title("Theoretical J-V for Eg = {:.3f} eV".format(self.E_gap))
-        plt.show()
+        #  plt.show()
 
 
 if __name__ == "__main__":
